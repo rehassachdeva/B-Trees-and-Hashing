@@ -130,7 +130,7 @@ public:
             	if(s->keys[0]<k)
                 	i++;
             	s->children[i]->insertNonFull(k);
-	            root = s;
+	            root=s;
     	    }
         	else root->insertNonFull(k);
     	}
