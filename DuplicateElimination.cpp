@@ -4,12 +4,11 @@ using namespace std;
 // Global constants
 #define MAX_BLOCK_HEAD 4
 #define MAX_COLLISIONS 2
+#define LC(veca, vecb) lexicographical_compare(veca.begin(), veca.end(), vecb.begin(), vecb.end())
 
 // Global variables
-
 ifstream inpFileStream;
 ofstream outFileStream;
-
 
 vector< vector<string> > inputBlocks;
 vector<string> outputBlock;
@@ -28,7 +27,7 @@ string typeIndex;
 
 // A BTree node
 class BTreeNode {
-    vector< int > keys;
+    vector< vector<int> > keys;
     vector< BTreeNode* > children;
     bool isLeaf;
     int minDeg, numKeys;
@@ -39,29 +38,35 @@ public:
     	isLeaf=_isLeaf;
     	numKeys=0;
     	keys.resize(2*minDeg-1);
+    	for(int i=0;i<2*minDeg-1;i++)
+    		keys[i].resize(numAttrs);
     	children.resize(2*minDeg);
     }
 
-    void insertNonFull(int k) {
+    void insertNonFull(vector<int> k) {
     	int i=numKeys-1;
 	    if(isLeaf==true) {
-        	while(i>=0 && keys[i]>k) keys[i+1] = keys[i--];
+        	while(i>=0 && lexicographical_compare(keys[i].begin(), keys[i].end(), k.begin(), k.end())!=0) {
+        		keys[i+1]=keys[i];
+        		i--;
+        	}
 	        keys[i+1]=k;
-    	    n++;
+    	    numKeys++;
     	}
     	else {
-	        while(i>=0 && keys[i]>k) i--;
+	        while(i>=0 && lexicographical_compare(keys[i].begin(), keys[i].end(), k.begin(), k.end())!=0)
+	        	i--;
 	        if(children[i+1]->numKeys==2*minDeg-1) {
 	            splitChild(i+1, children[i+1]);
-            if(keys[i+1]<k)
-                i++;
+            if(lexicographical_compare(k.begin(), k.end(), keys[i+1].begin(), keys[i+1].end())!=0)
+            	i++;
         	}
         	children[i+1]->insertNonFull(k);
     	}
     }
 
     void splitChild(int i, BTreeNode *y) {
-    	BTreeNode *z=new BTreeNode(y->minDeg, y->leaf);
+    	BTreeNode *z=new BTreeNode(y->minDeg, y->isLeaf);
     	z->numKeys=minDeg-1;
 
     	for(int j=0;j<minDeg-1;j++)	
@@ -85,14 +90,15 @@ public:
 	    numKeys=numKeys+1;
     }
     
-    BTreeNode *search(int k) {
+    BTreeNode *search(vector<int> k) {
     	int i = 0;
-    	while (i<numKeys && k>keys[i]) i++;
-	
-	    if (keys[i]==k)
+    	while(i<numKeys && lexicographical_compare(k.begin(), k.end(), keys[i].begin(), keys[i].end())!=0)
+    		i++;
+
+	    if(k==keys[i])
     	    return this;
 	
-	    if (isLeaf==true)
+	    if(isLeaf==true)
         	return NULL;
 	
 	    return children[i]->search(k);
@@ -111,11 +117,11 @@ public:
     	minDeg=_minDeg;
     }
 
-    BTreeNode* search(int k) {
+    BTreeNode* search(vector<int> k) {
     	return (root == NULL)?NULL:root->search(k);
     }
 
-    void insert(int k) {
+    void insert(vector<int> k) {
     	if(root==NULL) {
 	        root = new BTreeNode(minDeg, true);
         	root->keys[0]=k;
@@ -123,22 +129,25 @@ public:
     	}
     	else {
 	        if(root->numKeys==2*minDeg-1) {
+
 	            BTreeNode *s=new BTreeNode(minDeg, false);
 	            s->children[0]=root;
             	s->splitChild(0, root);
 	            int i=0;
-            	if(s->keys[0]<k)
+            	if(lexicographical_compare(k.begin(), k.end(), s->keys[0].begin(), s->keys[0].end())!=0)
                 	i++;
             	s->children[i]->insertNonFull(k);
 	            root=s;
     	    }
-        	else root->insertNonFull(k);
+        	else {
+        		root->insertNonFull(k);
+        	}
     	}
 
     }
 };
 
-void GetnextHash() {
+/*void GetnextHash() {
 	int curBlockIt=0, curBlockHeadIt=0;
 	while(true) {
 		if(curBlockIt==curBlock and curBlockHeadIt==curBlockHead) break;
@@ -164,9 +173,9 @@ void GetnextHash() {
 		}
 		curBlockHeadIt++;
 	}
-}
+}*/
 
-void openHash() {
+/*void openHash() {
 	string line;
 	recordPresence.clear();
 	while(getline(inpFileStream, line)) {
@@ -193,9 +202,9 @@ void openHash() {
 
 void openBTree() {
 
-}
+}*/
 
-void getnext() {
+/*void getnext() {
 
 }
 
@@ -222,11 +231,11 @@ void open() {
 void close() {
 	inpFileStream.close();
 	outFileStream.close();
-}
+}*/
 
 int main(int argc, char* argv[])
 {
-	if(argc!=6) {
+	/*if(argc!=6) {
 		cout<<"Invalid number of arguments!\n";
 		cout<<"Usage: <Input file> <Output file> <Number of attributes>";
 		cout<<" <Number of Blocks in memory used> <Type of index - btree or hash>\n";
@@ -241,7 +250,36 @@ int main(int argc, char* argv[])
 
 	open();
 	getnext();
-	close();
+	close();*/
 
+	/*vector<int> a,b;
+	a.push_back(1);
+	a.push_back(3);
+	b.push_back(2);
+	b.push_back(2);
+
+	cout<<lexicographical_compare(a.begin(),a.end(),b.begin(),b.end())<<endl;*/
+	BTree t(20);
+	numAttrs=3;
+
+	inpFileStream.open("Sample_Asg2.txt");
+	outFileStream.open("Sample_btree.out");
+	string line;
+	while(getline(inpFileStream, line)) {
+		stringstream linestream(line);
+		string curnum;
+		vector<int> record;
+		cout<<line<<endl;
+		while(getline(linestream, curnum, ',')) {
+			record.push_back(stoi(curnum));
+		}
+		if(t.search(record)) continue;
+		else {
+			t.insert(record);
+			outFileStream<<line<<endl;
+		}
+	}
+	inpFileStream.close();
+	outFileStream.close();
 	return 0;
 }
