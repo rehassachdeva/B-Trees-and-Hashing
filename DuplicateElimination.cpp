@@ -2,7 +2,7 @@
 using namespace std;
 
 // Global constants and macros
-#define MAX_BLOCK_SIZE 5
+#define MAX_BLOCK_SIZE 50000
 #define BTREE_MINDEG 20
 #define LC(veca, vecb) lexicographical_compare(veca.begin(), veca.end(), \
 		vecb.begin(), vecb.end())

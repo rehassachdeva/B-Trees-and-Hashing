@@ -54,5 +54,5 @@ while True:
 	# Check size of file so far
 	cur_size = os.stat(filename).st_size
 
-	if cur_size > 1e9:
+	if cur_size > 1.2e8:
 		break
