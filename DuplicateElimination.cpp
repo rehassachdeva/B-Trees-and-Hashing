@@ -1,10 +1,11 @@
 #include<bits/stdc++.h>
 using namespace std;
 
-// Global constants
+// Global constants and macros
 #define MAX_BLOCK_HEAD 4
 #define MAX_COLLISIONS 2
-#define LC(veca, vecb) lexicographical_compare(veca.begin(), veca.end(), vecb.begin(), vecb.end())
+#define LC(veca, vecb) lexicographical_compare(veca.begin(), veca.end(), \
+		vecb.begin(), vecb.end())
 
 // Global variables
 ifstream inpFileStream;
@@ -46,7 +47,7 @@ public:
     void insertNonFull(vector<int> k) {
     	int i=numKeys-1;
 	    if(isLeaf==true) {
-        	while(i>=0 && lexicographical_compare(keys[i].begin(), keys[i].end(), k.begin(), k.end())!=0) {
+        	while(i>=0 && LC(keys[i], k)!=0) {
         		keys[i+1]=keys[i];
         		i--;
         	}
@@ -54,11 +55,11 @@ public:
     	    numKeys++;
     	}
     	else {
-	        while(i>=0 && lexicographical_compare(keys[i].begin(), keys[i].end(), k.begin(), k.end())!=0)
+	        while(i>=0 && LC(keys[i], k)!=0)
 	        	i--;
 	        if(children[i+1]->numKeys==2*minDeg-1) {
 	            splitChild(i+1, children[i+1]);
-            if(lexicographical_compare(k.begin(), k.end(), keys[i+1].begin(), keys[i+1].end())!=0)
+            if(LC(k, keys[i+1])!=0)
             	i++;
         	}
         	children[i+1]->insertNonFull(k);
@@ -92,7 +93,7 @@ public:
     
     BTreeNode *search(vector<int> k) {
     	int i = 0;
-    	while(i<numKeys && lexicographical_compare(k.begin(), k.end(), keys[i].begin(), keys[i].end())!=0)
+    	while(i<numKeys && LC(k, keys[i])!=0)
     		i++;
 
 	    if(k==keys[i])
@@ -134,7 +135,7 @@ public:
 	            s->children[0]=root;
             	s->splitChild(0, root);
 	            int i=0;
-            	if(lexicographical_compare(k.begin(), k.end(), s->keys[0].begin(), s->keys[0].end())!=0)
+            	if(LC(k, s->keys[0])!=0)
                 	i++;
             	s->children[i]->insertNonFull(k);
 	            root=s;
@@ -146,6 +147,22 @@ public:
 
     }
 };
+
+// A HashMap Class
+class HashMap {
+	map<string, bool> recordPresence;
+public:
+	bool search(string key) {
+		if(recordPresence.find(key) == recordPresence.end()) return false;
+		return true;
+	}
+	void insert(string key) {
+		if(search(key)==false)
+			recordPresence[key]=true;
+	}
+};
+
+
 
 /*void GetnextHash() {
 	int curBlockIt=0, curBlockHeadIt=0;
@@ -259,14 +276,21 @@ int main(int argc, char* argv[])
 	b.push_back(2);
 
 	cout<<lexicographical_compare(a.begin(),a.end(),b.begin(),b.end())<<endl;*/
-	BTree t(20);
-	numAttrs=3;
+	/*BTree t(20);
+	numAttrs=3;*/
+
+	HashMap h;
 
 	inpFileStream.open("Sample_Asg2.txt");
-	outFileStream.open("Sample_btree.out");
+	outFileStream.open("Sample_hash.out");
 	string line;
 	while(getline(inpFileStream, line)) {
-		stringstream linestream(line);
+		if(h.search(line)) continue;
+		else {
+			h.insert(line);
+			outFileStream<<line<<endl;
+		}
+		/*stringstream linestream(line);
 		string curnum;
 		vector<int> record;
 		cout<<line<<endl;
@@ -277,9 +301,11 @@ int main(int argc, char* argv[])
 		else {
 			t.insert(record);
 			outFileStream<<line<<endl;
-		}
+		}*/
 	}
 	inpFileStream.close();
 	outFileStream.close();
+
+
 	return 0;
 }
