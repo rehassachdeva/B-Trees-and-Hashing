@@ -150,7 +150,7 @@ public:
 
 // A HashMap Class
 class HashMap {
-	map<string, bool> recordPresence;
+	unordered_map<string, bool> recordPresence;
 public:
 	bool search(string key) {
 		if(recordPresence.find(key) == recordPresence.end()) return false;
