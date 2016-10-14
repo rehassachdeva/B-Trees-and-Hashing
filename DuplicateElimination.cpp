@@ -4,27 +4,25 @@ using namespace std;
 // Global constants and macros
 #define MAX_BLOCK_HEAD 4
 #define MAX_COLLISIONS 2
+#define BTREE_MINDEG 20
 #define LC(veca, vecb) lexicographical_compare(veca.begin(), veca.end(), \
 		vecb.begin(), vecb.end())
 
 // Global variables
 ifstream inpFileStream;
 ofstream outFileStream;
+string inpFile;
+string outFile;
 
-vector< vector<string> > inputBlocks;
+/*vector< vector<string> > inputBlocks;
 vector<string> outputBlock;
 
 int curBlock;
 int curBlockHead;
-int outputBlockHead;
+int outputBlockHead;*/
 
-map<string, bool> recordPresence;
-
-string inpFile;
-string outFile;
 int numAttrs;
 int numBlocks;
-string typeIndex;
 
 // A BTree node
 class BTreeNode {
@@ -162,8 +160,6 @@ public:
 	}
 };
 
-
-
 /*void GetnextHash() {
 	int curBlockIt=0, curBlockHeadIt=0;
 	while(true) {
@@ -250,9 +246,49 @@ void close() {
 	outFileStream.close();
 }*/
 
+void open() {
+	inpFileStream.open(inpFile);
+	outFileStream.open(outFile);
+
+}
+
+void getnext(string typeIndex) {
+	string line;
+	if(typeIndex=="btree") {
+		BTree tree(BTREE_MINDEG);
+		while(getline(inpFileStream, line)) {
+			stringstream linestream(line);
+			string curnum;
+			vector<int> record;
+			while(getline(linestream, curnum, ','))
+				record.push_back(stoi(curnum));
+			if(tree.search(record)) continue;
+			else {
+				tree.insert(record);
+				outFileStream<<line<<endl;
+			}
+		}
+	}
+	else if(typeIndex=="hash") {
+		HashMap hash;
+		while(getline(inpFileStream, line)) {
+			if(hash.search(line)) continue;
+			else {
+				hash.insert(line);
+				outFileStream<<line<<endl;
+			}
+		}
+	}
+}
+
+void close() {
+	inpFileStream.close();
+	outFileStream.close();
+}
+
 int main(int argc, char* argv[])
 {
-	/*if(argc!=6) {
+	if(argc!=6) {
 		cout<<"Invalid number of arguments!\n";
 		cout<<"Usage: <Input file> <Output file> <Number of attributes>";
 		cout<<" <Number of Blocks in memory used> <Type of index - btree or hash>\n";
@@ -263,49 +299,11 @@ int main(int argc, char* argv[])
 	outFile = argv[2];
 	numAttrs = stoi(argv[3]);
 	numBlocks = stoi(argv[4]);
-	typeIndex = argv[5];
+	string typeIndex = argv[5];
 
 	open();
-	getnext();
-	close();*/
-
-	/*vector<int> a,b;
-	a.push_back(1);
-	a.push_back(3);
-	b.push_back(2);
-	b.push_back(2);
-
-	cout<<lexicographical_compare(a.begin(),a.end(),b.begin(),b.end())<<endl;*/
-	/*BTree t(20);
-	numAttrs=3;*/
-
-	HashMap h;
-
-	inpFileStream.open("Sample_Asg2.txt");
-	outFileStream.open("Sample_hash.out");
-	string line;
-	while(getline(inpFileStream, line)) {
-		if(h.search(line)) continue;
-		else {
-			h.insert(line);
-			outFileStream<<line<<endl;
-		}
-		/*stringstream linestream(line);
-		string curnum;
-		vector<int> record;
-		cout<<line<<endl;
-		while(getline(linestream, curnum, ',')) {
-			record.push_back(stoi(curnum));
-		}
-		if(t.search(record)) continue;
-		else {
-			t.insert(record);
-			outFileStream<<line<<endl;
-		}*/
-	}
-	inpFileStream.close();
-	outFileStream.close();
-
+	getnext(typeIndex);
+	close();
 
 	return 0;
 }
