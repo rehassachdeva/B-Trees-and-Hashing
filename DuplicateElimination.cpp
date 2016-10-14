@@ -2,8 +2,7 @@
 using namespace std;
 
 // Global constants and macros
-#define MAX_BLOCK_HEAD 4
-#define MAX_COLLISIONS 2
+#define MAX_BLOCK_SIZE 5
 #define BTREE_MINDEG 20
 #define LC(veca, vecb) lexicographical_compare(veca.begin(), veca.end(), \
 		vecb.begin(), vecb.end())
@@ -14,15 +13,16 @@ ofstream outFileStream;
 string inpFile;
 string outFile;
 
-/*vector< vector<string> > inputBlocks;
-vector<string> outputBlock;
+// Assuming buffer size is equal to block size. Last block is output buffer.
+vector<string> blocks, outputBlock;
 
-int curBlock;
 int curBlockHead;
-int outputBlockHead;*/
+int outputBlockHead;
 
 int numAttrs;
 int numBlocks;
+
+string typeIndex;
 
 // A BTree node
 class BTreeNode {
@@ -111,9 +111,9 @@ class BTree {
     BTreeNode *root;
     int minDeg;
 public:
-    BTree(int _minDeg) {
+    BTree() {
     	root=NULL;
-    	minDeg=_minDeg;
+    	minDeg=BTREE_MINDEG;
     }
 
     BTreeNode* search(vector<int> k) {
@@ -160,52 +160,21 @@ public:
 	}
 };
 
-/*void GetnextHash() {
-	int curBlockIt=0, curBlockHeadIt=0;
-	while(true) {
-		if(curBlockIt==curBlock and curBlockHeadIt==curBlockHead) break;
-		if(curBlockHeadIt==MAX_BLOCK_HEAD+1) {
-			curBlockIt++;
-			curBlockHeadIt=0;
+BTree tree;
+HashMap hash_;
+
+void manage_output(string line) {
+	outputBlock[outputBlockHead++]=line;
+	if(outputBlockHead==MAX_BLOCK_SIZE) {
+		outputBlockHead=0;
+		while(outputBlockHead!=MAX_BLOCK_SIZE) {
+			outFileStream<<outputBlock[outputBlockHead++]<<"\n";
 		}
-		if(recordPresence[inputBlocks[curBlockIt][curBlockHeadIt]] == true) {
-			curBlockHeadIt++;
-			continue;
-		}
-		else {
-			recordPresence[inputBlocks[curBlockIt][curBlockHeadIt]] = true;
-			outputBlock[outputBlockHead++]=inputBlocks[curBlockIt][curBlockHeadIt];
-			if(outputBlockHead==MAX_BLOCK_HEAD+1) {
-				outputBlockHead=0;
-				while(outputBlockHead!=MAX_BLOCK_HEAD+1) {
-					outFileStream<<outputBlock[outputBlockHead]<<"\n";
-					outputBlockHead++;
-				}
-				outputBlockHead=0;
-			}
-		}
-		curBlockHeadIt++;
+		outputBlockHead=0;
 	}
-}*/
+}
 
-/*void openHash() {
-	string line;
-	recordPresence.clear();
-	while(getline(inpFileStream, line)) {
-
-		if(curBlockHead==MAX_BLOCK_HEAD+1) {
-			curBlock++;
-			curBlockHead=0;
-		}
-
-		if(curBlockHead==MAX_BLOCK_HEAD+1 and curBlock==numBlocks-2) {
-			GetnextHash();
-			curBlock=curBlockHead=0;
-		}
-		else
-			inputBlocks[curBlock][curBlockHead++]=line;
-	}
-	GetnextHash();
+void flush_output() {
 	int outputBlockHeadIt=0;
 	while(outputBlockHeadIt!=outputBlockHead) {
 		outFileStream<<outputBlock[outputBlockHeadIt]<<"\n";
@@ -213,72 +182,63 @@ public:
 	}
 }
 
-void openBTree() {
+void process_btree(string line) {
+	stringstream linestream(line);
+	string curnum;
+	vector<int> record;
+	while(getline(linestream, curnum, ',')) {
+		record.push_back(stoi(curnum));
+	}
+	if(tree.search(record)) return;
+	else {
+		tree.insert(record);
+		manage_output(line);
+	}
+}
 
-}*/
+void process_hash(string line) {
+	if(hash_.search(line)) return;
+	else {
+		hash_.insert(line);
+		manage_output(line);
+	}
+}
 
-/*void getnext() {
+void process() {
+	int curBlockHeadIt=0;
+	string line;
+	while(true) {
+		if(curBlockHeadIt==curBlockHead)  {
+			curBlockHeadIt=0;
+			break;
+		}
+		line=blocks[curBlockHeadIt];
+		if(typeIndex=="btree") process_btree(line);
+		else if(typeIndex=="hash") process_hash(line);
+		curBlockHeadIt++;
+	}
+}
 
+void getnext() {
+	string line;
+	while(getline(inpFileStream, line)) {
+		if(curBlockHead==MAX_BLOCK_SIZE*(numBlocks-1)) {
+			process();
+			curBlockHead=0;
+		}
+		blocks[curBlockHead++]=line;
+	}
+	process();
+	flush_output();
 }
 
 void open() {
 	inpFileStream.open(inpFile);
 	outFileStream.open(outFile);
-
-	curBlock=0;
+	blocks.resize(MAX_BLOCK_SIZE*(numBlocks-1));
+	outputBlock.resize(MAX_BLOCK_SIZE);
 	curBlockHead=0;
 	outputBlockHead=0;
-
-	inputBlocks.resize(numBlocks-1);
-	for(int i=0;i<numBlocks-1;i++)
-		inputBlocks[i].resize(MAX_BLOCK_HEAD+1);
-	outputBlock.resize(MAX_BLOCK_HEAD+1);
-	
-	if(typeIndex == "hash")
-		openHash();
-	else if(typeIndex == "btree")
-		openBTree();
-	
-}
-
-void close() {
-	inpFileStream.close();
-	outFileStream.close();
-}*/
-
-void open() {
-	inpFileStream.open(inpFile);
-	outFileStream.open(outFile);
-
-}
-
-void getnext(string typeIndex) {
-	string line;
-	if(typeIndex=="btree") {
-		BTree tree(BTREE_MINDEG);
-		while(getline(inpFileStream, line)) {
-			stringstream linestream(line);
-			string curnum;
-			vector<int> record;
-			while(getline(linestream, curnum, ','))
-				record.push_back(stoi(curnum));
-			if(tree.search(record)) continue;
-			else {
-				tree.insert(record);
-				outFileStream<<line<<endl;
-			}
-		}
-	}
-	else if(typeIndex=="hash") {
-		HashMap hash;
-		while(getline(inpFileStream, line)) {
-			if(hash.search(line)) continue;
-			else {
-				hash.insert(line);
-				outFileStream<<line<<endl;
-			}
-		}
-	}
 }
 
 void close() {
@@ -299,10 +259,10 @@ int main(int argc, char* argv[])
 	outFile = argv[2];
 	numAttrs = stoi(argv[3]);
 	numBlocks = stoi(argv[4]);
-	string typeIndex = argv[5];
+	typeIndex = argv[5];
 
 	open();
-	getnext(typeIndex);
+	getnext();
 	close();
 
 	return 0;
